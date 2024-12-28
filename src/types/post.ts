@@ -32,6 +32,8 @@ export interface Template {
   likes: string[];
   usageCount: number;
   createdAt: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  tags: string[];
 }
 
 export interface Challenge {

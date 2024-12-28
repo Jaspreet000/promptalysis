@@ -8,6 +8,7 @@ interface RichTextEditorProps {
   placeholder?: string;
 }
 
+
 const RichTextEditor = ({
   content,
   onChange,

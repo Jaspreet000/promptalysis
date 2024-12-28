@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import Post from "@/models/post";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
 export async function POST(
-  request: Request,
-  context: { params: { postId: string } }
+  req: Request,
+  { params }: any
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -15,9 +15,9 @@ export async function POST(
     }
 
     await connectDB();
-    const { content } = await request.json();
+    const { content } = await req.json();
     
-    const post = await Post.findById(context.params.postId);
+    const post = await Post.findById(params.postId);
     if (!post) {
       return new NextResponse("Post not found", { status: 404 });
     }
@@ -29,7 +29,7 @@ export async function POST(
 
     await post.save();
     
-    const updatedPost = await Post.findById(context.params.postId)
+    const updatedPost = await Post.findById(params.postId)
       .populate('comments.author', 'name image');
       
     return NextResponse.json(updatedPost);

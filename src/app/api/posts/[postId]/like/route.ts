@@ -4,9 +4,15 @@ import Post from "@/models/post";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+type Context = {
+  params: {
+    postId: string;
+  };
+};
+
 export async function POST(
   request: Request,
-  { params }: { params: { postId: string } }
+  context: Context
 ): Promise<NextResponse> {
   try {
     const session = await getServerSession(authOptions);
@@ -15,7 +21,7 @@ export async function POST(
     }
 
     await connectDB();
-    const post = await Post.findById(params.postId);
+    const post = await Post.findById(context.params.postId);
     
     if (!post) {
       return new NextResponse("Post not found", { status: 404 });

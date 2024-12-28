@@ -1,19 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import Post from "@/models/post";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-interface RouteContext {
-  params: {
-    postId: string;
-  };
-}
-
 export async function POST(
   req: Request,
-  context: RouteContext
-): Promise<Response> {
+  { params }: { params: { postId: string } }
+) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -21,7 +15,7 @@ export async function POST(
     }
 
     await connectDB();
-    const post = await Post.findById(context.params.postId);
+    const post = await Post.findById(params.postId);
     
     if (!post) {
       return new NextResponse("Post not found", { status: 404 });

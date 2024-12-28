@@ -1,26 +1,46 @@
 import NextAuth from "next-auth";
+import { MongoDBAdapter } from "@auth/mongodb-adapter";
 import GoogleProvider from "next-auth/providers/google";
 import GithubProvider from "next-auth/providers/github";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { MongoDBAdapter } from "@auth/mongodb-adapter";
 import clientPromise from "@/lib/mongodb";
 import User from "@/models/user";
 import { connectDB } from "@/lib/db";
-import { Session } from "next-auth";
-import { JWT } from "next-auth/jwt";
-import { AuthOptions } from "next-auth";
+import type { NextAuthOptions } from "next-auth";
+import type { JWT } from "next-auth/jwt";
+import type { Session } from "next-auth";
 
-export const authOptions: AuthOptions = {
+interface ExtendedUser {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+}
+
+interface ExtendedToken extends JWT {
+  id?: string;
+}
+
+interface ExtendedSession extends Session {
+  user: {
+    id?: string;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  }
+}
+
+export const authOptions: NextAuthOptions = {
   adapter: MongoDBAdapter(clientPromise),
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_ID!,
-      clientSecret: process.env.GOOGLE_SECRET!,
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
     }),
     GithubProvider({
-      clientId: process.env.GITHUB_ID!,
-      clientSecret: process.env.GITHUB_SECRET!,
+      clientId: process.env.GITHUB_ID || "",
+      clientSecret: process.env.GITHUB_SECRET || "",
     }),
     CredentialsProvider({
       name: "credentials",
@@ -34,6 +54,7 @@ export const authOptions: AuthOptions = {
         }
 
         await connectDB();
+
         const user = await User.findOne({ email: credentials.email });
 
         if (!user || !user.password) {
@@ -49,25 +70,36 @@ export const authOptions: AuthOptions = {
           throw new Error("Invalid credentials");
         }
 
-        return user;
+        return {
+          id: user._id.toString(),
+          name: user.name,
+          email: user.email,
+          image: user.image,
+        };
       },
     }),
   ],
-  session: {
-    strategy: "jwt" as const,
-  },
-  secret: process.env.NEXTAUTH_SECRET,
-  pages: {
-    signIn: "/login",
-  },
   callbacks: {
-    async session({ session, token }: { session: Session; token: JWT }) {
-      if (token && session.user) {
-        session.user.id = token.sub;
+    async jwt({ token, user }: { token: ExtendedToken; user?: ExtendedUser }) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }: { session: ExtendedSession; token: ExtendedToken }) {
+      if (session.user) {
+        session.user.id = token.id;
       }
       return session;
     },
   },
+  pages: {
+    signIn: "/login",
+  },
+  session: {
+    strategy: "jwt",
+  },
+  secret: process.env.NEXTAUTH_SECRET,
 };
 
 const handler = NextAuth(authOptions);

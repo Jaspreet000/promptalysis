@@ -7,39 +7,17 @@ import clientPromise from "@/lib/mongodb";
 import User from "@/models/user";
 import { connectDB } from "@/lib/db";
 import type { NextAuthOptions } from "next-auth";
-import type { JWT } from "next-auth/jwt";
-import type { Session } from "next-auth";
-
-interface ExtendedUser {
-  id: string;
-  name?: string | null;
-  email?: string | null;
-  image?: string | null;
-}
-
-interface ExtendedToken extends JWT {
-  id?: string;
-}
-
-interface ExtendedSession extends Session {
-  user: {
-    id?: string;
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-  }
-}
 
 export const authOptions: NextAuthOptions = {
   adapter: MongoDBAdapter(clientPromise),
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
     GithubProvider({
-      clientId: process.env.GITHUB_ID || "",
-      clientSecret: process.env.GITHUB_SECRET || "",
+      clientId: process.env.GITHUB_ID!,
+      clientSecret: process.env.GITHUB_SECRET!,
     }),
     CredentialsProvider({
       name: "credentials",
@@ -49,11 +27,10 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Invalid credentials");
+          throw new Error("Missing credentials");
         }
 
         await connectDB();
-
         const user = await User.findOne({ email: credentials.email });
 
         if (!user || !user.password) {
@@ -78,25 +55,31 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
+  pages: {
+    signIn: "/login",
+    signOut: "/login",
+    error: "/login",
+  },
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
   callbacks: {
-    async jwt({ token, user }: { token: ExtendedToken; user?: ExtendedUser }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
+        token.provider = account?.provider;
       }
       return token;
     },
-    async session({ session, token }: { session: ExtendedSession; token: ExtendedToken }) {
+    async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id;
+        session.user.id = token.id as string;
+        session.user.provider = token.provider as string;
       }
       return session;
     },
   },
-  pages: {
-    signIn: "/login",
-  },
-  session: {
-    strategy: "jwt",
-  },
   secret: process.env.NEXTAUTH_SECRET,
-}; 
+  debug: process.env.NODE_ENV === "development",
+} 

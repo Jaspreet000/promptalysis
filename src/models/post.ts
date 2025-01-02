@@ -5,9 +5,15 @@ const postSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  content: String,
+  content: {
+    type: String,
+    required: true,
+  },
   prompt: String,
-  category: String,
+  category: {
+    type: String,
+    required: true,
+  },
   author: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

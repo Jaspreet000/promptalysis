@@ -31,18 +31,26 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
 
     await connectDB();
-    const body = await request.json();
-    const { title, content, prompt, category } = body;
+    const { title, content, prompt, category } = await request.json();
+
+    if (!title || !content || !category) {
+      return new NextResponse("Missing required fields", { status: 400 });
+    }
 
     const post = await Post.create({
       title,
       content,
       prompt,
       category,
-      author: session.user.id
+      author: session.user.id,
+      likes: [],
+      comments: []
     });
 
-    return NextResponse.json(post);
+    const populatedPost = await Post.findById(post._id)
+      .populate('author', 'name image');
+
+    return NextResponse.json(populatedPost);
   } catch (error) {
     console.error("Error creating post:", error);
     return new NextResponse("Internal Server Error", { status: 500 });

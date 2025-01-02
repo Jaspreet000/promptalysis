@@ -5,47 +5,66 @@ export interface User {
 }
 
 export interface Comment {
-  _id: string;
-  author: User;
+  id: string;
   content: string;
+  author: {
+    id: string;
+    name: string;
+    image?: string;
+  };
   createdAt: string;
 }
 
 export interface Post {
   _id: string;
+  id: string;
   title: string;
   content: string;
-  prompt: string;
   category: string;
-  author: User;
+  author: {
+    id: string;
+    name: string;
+    image?: string;
+  };
   likes: string[];
   comments: Comment[];
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface Template {
   _id: string;
+  id: string;
   title: string;
   content: string;
   category: string;
-  author: User;
-  likes: string[];
-  usageCount: number;
-  createdAt: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   tags: string[];
+  author: {
+    id: string;
+    name: string;
+    image?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Challenge {
   _id: string;
+  id: string;
   title: string;
   description: string;
   prompt: string;
   category: string;
-  author: User;
   deadline: string;
-  submissions: Submission[];
+  author: {
+    id: string;
+    name: string;
+    image?: string;
+  };
+  participants: string[];
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface Submission {

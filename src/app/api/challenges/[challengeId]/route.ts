@@ -3,10 +3,9 @@ import { connectDB } from "@/lib/db";
 import Challenge from "@/models/challenge";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import type { NextApiRequest, NextApiResponse } from 'next';
 
 export async function DELETE(
-  request: NextApiRequest,
+  request: Request,
   { params }: { params: { challengeId: string } }
 ): Promise<NextResponse> {
   try {

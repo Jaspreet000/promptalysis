@@ -1,12 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import Challenge from "@/models/challenge";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+interface RequestContext {
+  params: {
+    challengeId: string;
+  };
+}
+
 export async function DELETE(
-  request: Request,
-  { params }: { params: { challengeId: string } }
+  request: NextRequest,
+  { params }: RequestContext
 ) {
   try {
     const session = await getServerSession(authOptions);

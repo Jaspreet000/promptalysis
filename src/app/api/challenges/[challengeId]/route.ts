@@ -6,10 +6,10 @@ import { authOptions } from "@/lib/auth";
 
 export async function DELETE(
   request: Request,
-  context: { params: { challengeId: string } }
+  { params }: { params: Record<string, string> }
 ) {
   try {
-    const { params } = context;
+    const { challengeId } = params;
 
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -17,13 +17,12 @@ export async function DELETE(
     }
 
     await connectDB();
-    const challenge = await Challenge.findById(params.challengeId);
+    const challenge = await Challenge.findById(challengeId);
 
     if (!challenge) {
       return NextResponse.json({ message: "Challenge not found" }, { status: 404 });
     }
 
-    // Check if the user is the author of the challenge
     if (challenge.author.toString() !== session.user.id) {
       return NextResponse.json(
         { message: "Not authorized to delete this challenge" },
@@ -31,7 +30,7 @@ export async function DELETE(
       );
     }
 
-    await Challenge.findByIdAndDelete(params.challengeId);
+    await Challenge.findByIdAndDelete(challengeId);
     return NextResponse.json({ message: "Challenge deleted successfully" }, { status: 200 });
   } catch (error) {
     console.error("Error deleting challenge:", error);

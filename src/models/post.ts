@@ -13,6 +13,10 @@ const postSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  fromTemplate: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Template'
+  },
   likes: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'

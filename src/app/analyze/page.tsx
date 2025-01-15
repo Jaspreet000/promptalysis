@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "next-auth/react";
 import ReactMarkdown from "react-markdown";
 import { getPromptTemplate, getModeExamples } from "@/lib/gemini";
+import { toast } from "react-hot-toast";
 
 interface ScoreMetrics {
   style: number;
@@ -19,13 +20,6 @@ interface ScoreMetrics {
 interface AnalysisError {
   message: string;
   type: "api" | "validation" | "network" | "unknown";
-}
-
-interface AnalysisResult {
-  promptResult: string;
-  response: string;
-  scores: ScoreMetrics;
-  suggestions: string[];
 }
 
 export default function AnalyzePage() {
@@ -62,6 +56,49 @@ export default function AnalyzePage() {
     });
     setSuggestions([]);
     setError(null);
+  };
+
+  const handleModeChange = (newMode: string) => {
+    setMode(newMode);
+    setTemplate(getPromptTemplate(newMode));
+    setExamples(getModeExamples(newMode));
+  };
+
+  const checkAchievements = async () => {
+    try {
+      const response = await fetch("/api/achievements/check", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ category: "analysis" }),
+      });
+
+      if (response.ok) {
+        const { awarded } = await response.json();
+        if (awarded && awarded.length > 0) {
+          // Show achievement notifications
+          awarded.forEach((achievement: any) => {
+            toast.success(
+              <div className="flex items-center gap-2">
+                <span className="text-xl">{achievement.icon}</span>
+                <div>
+                  <p className="font-semibold">{achievement.name}</p>
+                  <p className="text-sm">{achievement.description}</p>
+                </div>
+              </div>,
+              {
+                duration: 5000,
+                className:
+                  "bg-gradient-to-r from-indigo-500 to-purple-500 text-white",
+              }
+            );
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to check achievements:", error);
+    }
   };
 
   const handleAnalyze = async () => {
@@ -115,6 +152,9 @@ export default function AnalyzePage() {
       setAiResponse(data.response);
       setScores(data.scores);
       setSuggestions(data.suggestions);
+
+      // Check for achievements after successful analysis
+      await checkAchievements();
     } catch (error: any) {
       console.error("Analysis error:", error);
       if (error.name === "AbortError") {
@@ -137,12 +177,6 @@ export default function AnalyzePage() {
     } finally {
       setIsAnalyzing(false);
     }
-  };
-
-  const handleModeChange = (newMode: string) => {
-    setMode(newMode);
-    setTemplate(getPromptTemplate(newMode));
-    setExamples(getModeExamples(newMode));
   };
 
   return (
@@ -175,7 +209,7 @@ export default function AnalyzePage() {
                   whileTap={{ scale: 0.98 }}
                   value={mode}
                   onChange={(e) => handleModeChange(e.target.value)}
-                  className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm"
+                  className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
                   disabled={isAnalyzing}
                 >
                   <option value="casual">Casual Mode</option>

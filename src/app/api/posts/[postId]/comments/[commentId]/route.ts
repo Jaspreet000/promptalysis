@@ -4,9 +4,9 @@ import Post from "@/models/post";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-export async function POST(
+export async function DELETE(
   req: Request,
-  { params }: any
+  { params }: { params: { postId: string; commentId: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -15,20 +15,33 @@ export async function POST(
     }
 
     await connectDB();
-    const { content } = await req.json();
-    
     const post = await Post.findById(params.postId);
+    
     if (!post) {
       return new NextResponse("Post not found", { status: 404 });
     }
 
-    post.comments.push({
-      author: session.user.id,
-      content
-    });
+    // Check if the user is the author of the comment
+    const commentDoc = await Post.findOne(
+      { _id: params.postId, "comments._id": params.commentId },
+      { "comments.$": 1 }
+    ).populate('comments.author', '_id');
 
-    await post.save();
-    
+    if (!commentDoc || !commentDoc.comments[0]) {
+      return new NextResponse("Comment not found", { status: 404 });
+    }
+
+    const comment = commentDoc.comments[0];
+    if (comment.author._id.toString() !== session.user.id) {
+      return new NextResponse("Not authorized to delete this comment", { status: 403 });
+    }
+
+    // Remove the comment
+    await Post.updateOne(
+      { _id: params.postId },
+      { $pull: { comments: { _id: params.commentId } } }
+    );
+
     const updatedPost = await Post.findById(params.postId)
       .populate({
         path: 'author',
@@ -48,10 +61,10 @@ export async function POST(
           image: doc.image
         })
       });
-      
+
     return NextResponse.json(updatedPost);
   } catch (error) {
-    console.error("Error adding comment:", error);
+    console.error("Error deleting comment:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 } 

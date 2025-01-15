@@ -12,11 +12,20 @@ export async function GET(request: Request): Promise<NextResponse> {
     const query = category ? { category } : {};
 
     const templates = await Template.find(query)
-      .populate('author', 'name image')
-      .sort({ usageCount: -1 });
+      .populate({
+        path: 'author',
+        select: 'name image _id',
+        transform: (doc) => ({
+          id: doc._id.toString(),
+          name: doc.name,
+          image: doc.image
+        })
+      })
+      .sort({ createdAt: -1 });
 
     return NextResponse.json(templates);
   } catch (error) {
+    console.error("Error fetching templates:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
@@ -28,15 +37,31 @@ export async function POST(request: Request): Promise<NextResponse> {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const body = await request.json();
+    await connectDB();
+    const { title, content, category, difficulty, tags } = await request.json();
+
+    if (!title || !content || !category || !difficulty) {
+      return new NextResponse("Missing required fields", { status: 400 });
+    }
+
     const template = await Template.create({
-      ...body,
+      title,
+      content,
+      category,
+      difficulty,
+      tags: tags || [],
       author: session.user.id,
-      usageCount: 0
+      usageCount: 0,
+      likes: [],
+      createdAt: new Date()
     });
 
-    return NextResponse.json(template);
+    const populatedTemplate = await Template.findById(template._id)
+      .populate('author', 'name image');
+
+    return NextResponse.json(populatedTemplate);
   } catch (error) {
+    console.error("Error creating template:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 } 

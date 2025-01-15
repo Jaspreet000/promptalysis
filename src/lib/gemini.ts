@@ -1,229 +1,213 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY!);
-
-interface ModeConfig {
-  criteria: string;
-  weights: {
-    style: number;
-    grammar: number;
-    creativity: number;
-    clarity: number;
-    relevance: number;
-  };
-  examples: string[];
-  template: string;
-}
-
-const modeConfigurations: Record<string, ModeConfig> = {
-  technical: {
-    criteria: `
-      Technical Mode Specific Criteria:
-      - Technical accuracy and precision (30%)
-      - Proper use of terminology (25%)
-      - Implementation feasibility (25%)
-      - Documentation standards (20%)`,
-    weights: {
-      style: 0.15,
-      grammar: 0.20,
-      creativity: 0.10,
-      clarity: 0.30,
-      relevance: 0.25
-    },
-    examples: [
-      "Explain the architecture of a microservices-based e-commerce system",
-      "How to implement JWT authentication in a Node.js API",
-      "Design a database schema for a social media platform"
-    ],
-    template: `[System Requirements]
-- Purpose:
-- Technical Constraints:
-- Expected Behavior:
-
-[Implementation Details]
-- Architecture:
-- Components:
-- Dependencies:
-
-[Additional Considerations]
-- Security:
-- Scalability:
-- Performance:`
-  },
-  creative: {
-    criteria: `
-      Creative Mode Specific Criteria:
-      - Imaginative approach (30%)
-      - Narrative elements (25%)
-      - Emotional engagement (25%)
-      - Artistic expression (20%)`,
-    weights: {
-      style: 0.25,
-      grammar: 0.15,
-      creativity: 0.30,
-      clarity: 0.15,
-      relevance: 0.15
-    },
-    examples: [
-      "Create a story about a time traveler who can only go 24 hours into the future",
-      "Design a unique magical system for a fantasy world",
-      "Write a dialogue between the sun and the moon"
-    ],
-    template: `[Scene Setting]
-- Environment:
-- Atmosphere:
-- Time/Period:
-
-[Creative Elements]
-- Main Theme:
-- Unique Aspects:
-- Emotional Core:
-
-[Narrative Structure]
-- Beginning:
-- Development:
-- Resolution:`
-  },
-  casual: {
-    criteria: `
-      Casual Mode Specific Criteria:
-      - Conversational tone (30%)
-      - Relatable examples (25%)
-      - Engaging dialogue (25%)
-      - Natural flow (20%)`,
-    weights: {
-      style: 0.20,
-      grammar: 0.15,
-      creativity: 0.20,
-      clarity: 0.25,
-      relevance: 0.20
-    },
-    examples: [
-      "Explain how to make the perfect cup of coffee",
-      "Share tips for maintaining a work-life balance",
-      "Describe your ideal weekend routine"
-    ],
-    template: `[Main Topic]
-- What we want to know:
-- Why it matters:
-- Who it's for:
-
-[Key Points]
-- Main ideas:
-- Examples:
-- Tips:
-
-[Practical Application]
-- Real-world usage:
-- Common scenarios:
-- Helpful hints:`
-  }
-};
+const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY || "");
 
 export function getPromptTemplate(mode: string): string {
-  return modeConfigurations[mode]?.template || '';
+  switch (mode) {
+    case "casual":
+      return "Write a friendly and informal response about...";
+    case "technical":
+      return "Provide a detailed technical explanation of...";
+    case "creative":
+      return "Create an imaginative and engaging story about...";
+    default:
+      return "Enter your prompt here...";
+  }
 }
 
 export function getModeExamples(mode: string): string[] {
-  return modeConfigurations[mode]?.examples || [];
+  switch (mode) {
+    case "casual":
+      return [
+        "Explain why the sky is blue in simple terms",
+        "What makes ice cream so delicious?",
+        "Why do cats purr?",
+      ];
+    case "technical":
+      return [
+        "Explain the principles of quantum computing",
+        "How does blockchain technology work?",
+        "Describe the process of photosynthesis in detail",
+      ];
+    case "creative":
+      return [
+        "Write a story about a time-traveling coffee cup",
+        "Describe a world where colors have sounds",
+        "Create a tale about a library that comes alive at night",
+      ];
+    default:
+      return [];
+  }
 }
 
 export async function analyzePrompt(prompt: string, mode: string) {
-  const config = modeConfigurations[mode];
-  
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
+    // First, get the direct answer to the prompt
+    const answerResult = await model.generateContent(prompt);
+    const answer = answerResult.response.text();
+
+    // Then, analyze the prompt with a more detailed structure
     const analysisPrompt = `
-      You are an expert prompt engineer and AI analyst.
+      Analyze the following prompt and provide a comprehensive evaluation:
       
-      Task 1: Answer this prompt: "${prompt}"
-      Task 2: Analyze the prompt quality using these criteria:
-      
-      ${config.criteria}
+      Prompt: "${prompt}"
+      Mode: ${mode}
 
-      Base Criteria:
-      Style (0-100): ${config.weights.style * 100}% weight
-      Grammar (0-100): ${config.weights.grammar * 100}% weight
-      Creativity (0-100): ${config.weights.creativity * 100}% weight
-      Clarity (0-100): ${config.weights.clarity * 100}% weight
-      Relevance (0-100): ${config.weights.relevance * 100}% weight
+      Please provide a detailed analysis in the following format:
 
-      Example prompts for ${mode} mode:
-      ${config.examples.map(ex => `- ${ex}`).join('\n')}
+      DEEP ANALYSIS:
+      1. Strengths:
+      - List key strengths and positive aspects of the prompt (if any)
+      - Highlight effective elements and techniques used (if present)
+      - Note any particularly impactful or well-executed parts
 
-      Return JSON without formatting:
+      2. Areas for Improvement:
+      - Identify aspects that could be enhanced
+      - Point out any missed opportunities
+      - Note any potential weaknesses
+
+      3. Mode-Specific Analysis (${mode}):
+      - Evaluate how well the prompt fits the chosen mode
+      - Assess appropriateness for the target audience
+      - Analyze effectiveness for the intended purpose
+
+      4. Scoring Breakdown:
+      For each category below, provide a score (0-100) with detailed justification.
+      IMPORTANT: Be very strict with scoring. A simple or minimal prompt should receive low scores.
+      For example, a one-word prompt like "hi" should score below 30 in most categories.
+
+      Style (Score: X/100):
+      Scoring criteria:
+      - 0-20: Minimal effort, single words, or basic greetings
+      - 21-40: Basic phrases with little style consideration
+      - 41-60: Clear writing with some style elements
+      - 61-80: Well-crafted with consistent tone and good expression
+      - 81-100: Exceptional writing with masterful style
+
+      Grammar (Score: X/100):
+      Scoring criteria:
+      - 0-20: Incomplete sentences or single words
+      - 21-40: Basic complete sentences with potential errors
+      - 41-60: Proper sentences with standard grammar
+      - 61-80: Well-structured with varied sentence patterns
+      - 81-100: Perfect grammar with sophisticated structure
+
+      Creativity (Score: X/100):
+      Scoring criteria:
+      - 0-20: Common words/phrases, no creative elements
+      - 21-40: Basic creative attempt
+      - 41-60: Some original elements
+      - 61-80: Unique and engaging approach
+      - 81-100: Highly innovative and original
+
+      Clarity (Score: X/100):
+      Scoring criteria:
+      - 0-20: Unclear or too brief to convey meaning
+      - 21-40: Basic meaning conveyed but lacks detail
+      - 41-60: Clear meaning with adequate detail
+      - 61-80: Very clear with good detail and organization
+      - 81-100: Exceptionally clear and well-organized
+
+      Relevance (Score: X/100):
+      Scoring criteria:
+      - 0-20: Minimal relevance to mode or purpose
+      - 21-40: Basic relevance but lacks focus
+      - 41-60: Relevant with room for improvement
+      - 61-80: Well-aligned with mode and purpose
+      - 81-100: Perfectly aligned with exceptional focus
+
+      SUGGESTIONS FOR IMPROVEMENT:
+      Provide SPECIFIC, actionable suggestions. Each suggestion must start with a dash (-).
+      Do NOT use placeholders. If no suggestions are provided, the section will be ignored.
+
+      Content Enhancement:
+      - [Provide actual content suggestion here]
+      - [Provide another specific content suggestion]
+
+      Structural Improvements:
+      - [Provide actual structure suggestion here]
+      - [Provide another specific structure suggestion]
+
+      Style Refinements:
+      - [Provide actual style suggestion here]
+      - [Provide another specific style suggestion]
+
+      Mode-Specific Recommendations:
+      - [Provide actual ${mode} mode suggestion here]
+      - [Provide another specific ${mode} suggestion]
+
+      SCORES:
       {
-        "promptResult": "Answer formatted for ${mode} mode",
-        "response": "Analysis with mode-specific insights",
-        "scores": {
-          "style": weighted_score,
-          "grammar": weighted_score,
-          "creativity": weighted_score,
-          "clarity": weighted_score,
-          "relevance": weighted_score
-        },
-        "suggestions": [
-          "Mode-specific improvement",
-          "Structure enhancement based on template",
-          "Comparison with example prompts"
-        ]
+        "style": [score],
+        "grammar": [score],
+        "creativity": [score],
+        "clarity": [score],
+        "relevance": [score]
       }
     `;
 
-    const result = await model.generateContent(analysisPrompt);
-    const response = await result.response;
-    let text = response.text();
-    
-    try {
-      // Clean the response text
-      text = text
-        // Remove any markdown code block markers
-        .replace(/```json\s*|\s*```/g, '')
-        // Remove any "JSON" text prefix
-        .replace(/^JSON\s*/, '')
-        // Clean up any potential line breaks within the JSON
-        .split('\n')
-        .map(line => line.trim())
-        .join(' ')
-        .trim();
+    const analysisResult = await model.generateContent(analysisPrompt);
+    const analysisText = analysisResult.response.text();
 
-      // Try to find the JSON object boundaries
-      const startBrace = text.indexOf('{');
-      const endBrace = text.lastIndexOf('}');
-      
-      if (startBrace === -1 || endBrace === -1) {
-        throw new Error("Invalid JSON structure");
+    // Extract scores from the analysis
+    const scoresMatch = analysisText.match(/\{[\s\S]*\}/);
+    let scores = {
+      style: 0,
+      grammar: 0,
+      creativity: 0,
+      clarity: 0,
+      relevance: 0,
+    };
+
+    if (scoresMatch) {
+      try {
+        scores = JSON.parse(scoresMatch[0]);
+      } catch (e) {
+        console.error("Failed to parse scores:", e);
       }
-
-      // Extract just the JSON part
-      const jsonText = text.slice(startBrace, endBrace + 1);
-
-      // Parse and validate the JSON
-      const parsedData = JSON.parse(jsonText);
-
-      // Validate required fields
-      if (!parsedData.promptResult || 
-          !parsedData.response || 
-          !parsedData.scores || 
-          !Array.isArray(parsedData.suggestions)) {
-        throw new Error("Missing required fields in response");
-      }
-
-      // Validate score values
-      const scores = parsedData.scores;
-      for (const key of ['style', 'grammar', 'creativity', 'clarity', 'relevance']) {
-        if (typeof scores[key] !== 'number' || scores[key] < 0 || scores[key] > 100) {
-          throw new Error(`Invalid score value for ${key}`);
-        }
-      }
-
-      return parsedData;
-    } catch (parseError: unknown) {
-      console.error("JSON Parse Error:", parseError);
-      console.log("Raw Response:", text);
-      throw new Error(`Failed to parse AI response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
     }
+
+    // Extract suggestions from the analysis
+    const suggestionSection = analysisText
+      .split('SUGGESTIONS FOR IMPROVEMENT:')[1]
+      ?.split('SCORES:')[0];
+
+    const suggestions = suggestionSection
+      ? suggestionSection
+          .split('\n')
+          .filter(line => line.trim().startsWith('-'))
+          .map(line => line.trim().replace(/^-\s*/, ''))
+          .map(suggestion => suggestion.replace(/^\[|\]$/g, ''))
+          .filter(suggestion => 
+            suggestion.length > 0 && 
+            !suggestion.includes('Provide') && 
+            !suggestion.includes('actual') &&
+            !suggestion.includes('specific') &&
+            !suggestion.includes('another')
+          )
+      : [];
+
+    // Extract the deep analysis section
+    const deepAnalysis = analysisText
+      .split('DEEP ANALYSIS:')[1]
+      ?.split('SUGGESTIONS FOR IMPROVEMENT:')[0]
+      .trim()
+      // Remove only asterisks while preserving other formatting
+      .replace(/\*\*/g, '')
+      // Ensure proper line breaks are maintained
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .join('\n');
+
+    return {
+      promptResult: answer,
+      response: deepAnalysis,
+      scores,
+      suggestions,
+    };
   } catch (error) {
     console.error("Gemini API Error:", error);
     throw error;

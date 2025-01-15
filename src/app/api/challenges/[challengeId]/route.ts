@@ -6,18 +6,16 @@ import { authOptions } from "@/lib/auth";
 
 export async function DELETE(
   request: Request,
-  { params }: { params: Record<string, string> } // Correct context type
+  { params }: { params: { challengeId: string } }
 ) {
   try {
-    const challengeId = params.challengeId;
-
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     await connectDB();
-    const challenge = await Challenge.findById(challengeId);
+    const challenge = await Challenge.findById(params.challengeId);
 
     if (!challenge) {
       return NextResponse.json({ message: "Challenge not found" }, { status: 404 });
@@ -30,7 +28,7 @@ export async function DELETE(
       );
     }
 
-    await Challenge.findByIdAndDelete(challengeId);
+    await Challenge.findByIdAndDelete(params.challengeId);
     return NextResponse.json({ message: "Challenge deleted successfully" }, { status: 200 });
   } catch (error) {
     console.error("Error deleting challenge:", error);

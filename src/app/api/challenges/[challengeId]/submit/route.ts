@@ -4,9 +4,16 @@ import Challenge from "@/models/challenge";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+type RouteContext = {
+  params: {
+    challengeId: string;
+  };
+  searchParams: { [key: string]: string | string[] | undefined };
+};
+
 export async function POST(
   req: Request,
-  { params }: { params: { challengeId: string } }
+  context: RouteContext
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -21,7 +28,7 @@ export async function POST(
       return new NextResponse("Missing content", { status: 400 });
     }
 
-    const challenge = await Challenge.findById(params.challengeId);
+    const challenge = await Challenge.findById(context.params.challengeId);
     
     if (!challenge) {
       return new NextResponse("Challenge not found", { status: 404 });

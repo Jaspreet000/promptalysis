@@ -4,9 +4,13 @@ import Challenge from "@/models/challenge";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+interface Context {
+  params: { challengeId: string };
+}
+
 export async function DELETE(
-  request: Request,
-  context: { params: { challengeId: string } }
+  _req: Request,
+  { params }: Context
 ): Promise<NextResponse> {
   try {
     const session = await getServerSession(authOptions);
@@ -15,7 +19,7 @@ export async function DELETE(
     }
 
     await connectDB();
-    const challenge = await Challenge.findById(context.params.challengeId);
+    const challenge = await Challenge.findById(params.challengeId);
     
     if (!challenge) {
       return new NextResponse("Challenge not found", { status: 404 });
@@ -26,7 +30,7 @@ export async function DELETE(
       return new NextResponse("Not authorized to delete this challenge", { status: 403 });
     }
 
-    await Challenge.findByIdAndDelete(context.params.challengeId);
+    await Challenge.findByIdAndDelete(params.challengeId);
     return new NextResponse("Challenge deleted successfully", { status: 200 });
   } catch (error) {
     console.error("Error deleting challenge:", error);

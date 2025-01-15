@@ -4,13 +4,9 @@ import Challenge from "@/models/challenge";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-interface Context {
-  params: { challengeId: string };
-}
-
 export async function DELETE(
-  _req: Request,
-  { params }: Context
+  request: Request,
+  { params }: { params: { challengeId: string } } & { searchParams: { [key: string]: string | string[] | undefined } }
 ): Promise<NextResponse> {
   try {
     const session = await getServerSession(authOptions);

@@ -4,15 +4,9 @@ import Template from "@/models/template";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-interface RouteContext {
-  params: {
-    templateId: string;
-  };
-}
-
 export async function DELETE(
   request: Request,
-  context: RouteContext
+  { params }: { params: { templateId: string } }
 ): Promise<NextResponse> {
   try {
     const session = await getServerSession(authOptions);
@@ -21,7 +15,7 @@ export async function DELETE(
     }
 
     await connectDB();
-    const template = await Template.findById(context.params.templateId);
+    const template = await Template.findById(params.templateId);
     
     if (!template) {
       return new NextResponse("Template not found", { status: 404 });
@@ -32,7 +26,7 @@ export async function DELETE(
       return new NextResponse("Not authorized to delete this template", { status: 403 });
     }
 
-    await Template.findByIdAndDelete(context.params.templateId);
+    await Template.findByIdAndDelete(params.templateId);
     return new NextResponse("Template deleted successfully", { status: 200 });
   } catch (error) {
     console.error("Error deleting template:", error);

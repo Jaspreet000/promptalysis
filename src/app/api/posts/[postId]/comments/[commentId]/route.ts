@@ -4,16 +4,9 @@ import Post from "@/models/post";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-type Props = {
-  params: {
-    postId: string;
-    commentId: string;
-  };
-};
-
 export async function DELETE(
   request: Request,
-  props: Props
+  { params }: { params: { postId: string; commentId: string } } & { searchParams: { [key: string]: string | string[] | undefined } }
 ): Promise<NextResponse> {
   try {
     const session = await getServerSession(authOptions);
@@ -22,7 +15,7 @@ export async function DELETE(
     }
 
     await connectDB();
-    const post = await Post.findById(props.params.postId);
+    const post = await Post.findById(params.postId);
     
     if (!post) {
       return new NextResponse("Post not found", { status: 404 });
@@ -30,7 +23,7 @@ export async function DELETE(
 
     // Check if the user is the author of the comment
     const commentDoc = await Post.findOne(
-      { _id: props.params.postId, "comments._id": props.params.commentId },
+      { _id: params.postId, "comments._id": params.commentId },
       { "comments.$": 1 }
     ).populate('comments.author', '_id');
 
@@ -45,11 +38,11 @@ export async function DELETE(
 
     // Remove the comment
     await Post.updateOne(
-      { _id: props.params.postId },
-      { $pull: { comments: { _id: props.params.commentId } } }
+      { _id: params.postId },
+      { $pull: { comments: { _id: params.commentId } } }
     );
 
-    const updatedPost = await Post.findById(props.params.postId)
+    const updatedPost = await Post.findById(params.postId)
       .populate({
         path: 'author',
         select: 'name image _id',

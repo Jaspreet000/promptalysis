@@ -6,10 +6,10 @@ import { authOptions } from "@/lib/auth";
 
 export async function DELETE(
   request: Request,
-  { params }: { params: Record<string, string> }
+  context: { params: { challengeId: string } }
 ) {
   try {
-    const { challengeId } = params;
+    const { challengeId } = context.params;
 
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {

@@ -4,32 +4,39 @@ import Challenge from "@/models/challenge";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+type RouteSegment = {
+  params: {
+    challengeId: string;
+  };
+  searchParams: { [key: string]: string | string[] | undefined };
+};
+
 export async function DELETE(
-  req: Request,
-  { params, searchParams }: { params: { challengeId: string }; searchParams: Record<string, string | string[]> }
-): Promise<Response> {
+  _req: Request,
+  context: RouteSegment
+): Promise<NextResponse> {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+      return new NextResponse("Unauthorized", { status: 401 });
     }
 
     await connectDB();
-    const challenge = await Challenge.findById(params.challengeId);
-
+    const challenge = await Challenge.findById(context.params.challengeId);
+    
     if (!challenge) {
-      return NextResponse.json({ message: "Challenge not found" }, { status: 404 });
+      return new NextResponse("Challenge not found", { status: 404 });
     }
 
     // Check if the user is the author of the challenge
     if (challenge.author.toString() !== session.user.id) {
-      return NextResponse.json({ message: "Not authorized to delete this challenge" }, { status: 403 });
+      return new NextResponse("Not authorized to delete this challenge", { status: 403 });
     }
 
-    await Challenge.findByIdAndDelete(params.challengeId);
-    return NextResponse.json({ message: "Challenge deleted successfully" }, { status: 200 });
+    await Challenge.findByIdAndDelete(context.params.challengeId);
+    return new NextResponse("Challenge deleted successfully", { status: 200 });
   } catch (error) {
     console.error("Error deleting challenge:", error);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+    return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

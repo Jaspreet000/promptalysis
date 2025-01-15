@@ -4,17 +4,7 @@ import Challenge from "@/models/challenge";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-type RouteContext = {
-  params: {
-    challengeId: string;
-  };
-  searchParams: { [key: string]: string | string[] | undefined };
-};
-
-export async function POST(
-  req: Request,
-  context: RouteContext
-) {
+export async function POST(req, context) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -29,7 +19,7 @@ export async function POST(
     }
 
     const challenge = await Challenge.findById(context.params.challengeId);
-    
+
     if (!challenge) {
       return new NextResponse("Challenge not found", { status: 404 });
     }
@@ -41,11 +31,13 @@ export async function POST(
 
     // Check if user has already submitted
     const existingSubmission = challenge.submissions.find(
-      (sub: any) => sub.author.toString() === session.user.id
+      (sub) => sub.author.toString() === session.user.id
     );
 
     if (existingSubmission) {
-      return new NextResponse("You have already submitted to this challenge", { status: 400 });
+      return new NextResponse("You have already submitted to this challenge", {
+        status: 400,
+      });
     }
 
     challenge.submissions.push({
@@ -53,18 +45,18 @@ export async function POST(
       content,
       score: 0,
       feedback: "",
-      createdAt: new Date()
+      createdAt: new Date(),
     });
 
     await challenge.save();
-    
+
     const updatedChallenge = await Challenge.findById(challenge._id)
-      .populate('author', 'name image')
-      .populate('submissions.author', 'name image');
+      .populate("author", "name image")
+      .populate("submissions.author", "name image");
 
     return NextResponse.json(updatedChallenge);
   } catch (error) {
     console.error("Error submitting to challenge:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
-} 
+}

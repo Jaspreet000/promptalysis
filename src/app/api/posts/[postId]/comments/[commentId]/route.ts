@@ -4,9 +4,17 @@ import Post from "@/models/post";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+type RouteSegment = {
+  params: {
+    postId: string;
+    commentId: string;
+  };
+  searchParams: { [key: string]: string | string[] | undefined };
+};
+
 export async function DELETE(
-  request: Request,
-  { params }: { params: { postId: string; commentId: string } }
+  _req: Request,
+  context: RouteSegment
 ): Promise<NextResponse> {
   try {
     const session = await getServerSession(authOptions);
@@ -15,54 +23,26 @@ export async function DELETE(
     }
 
     await connectDB();
-    const post = await Post.findById(params.postId);
+    const post = await Post.findById(context.params.postId);
     
     if (!post) {
       return new NextResponse("Post not found", { status: 404 });
     }
 
-    // Check if the user is the author of the comment
-    const commentDoc = await Post.findOne(
-      { _id: params.postId, "comments._id": params.commentId },
-      { "comments.$": 1 }
-    ).populate('comments.author', '_id');
-
-    if (!commentDoc || !commentDoc.comments[0]) {
+    const comment = post.comments.id(context.params.commentId);
+    if (!comment) {
       return new NextResponse("Comment not found", { status: 404 });
     }
 
-    const comment = commentDoc.comments[0];
-    if (comment.author._id.toString() !== session.user.id) {
+    // Check if the user is the author of the comment
+    if (comment.author.toString() !== session.user.id) {
       return new NextResponse("Not authorized to delete this comment", { status: 403 });
     }
 
-    // Remove the comment
-    await Post.updateOne(
-      { _id: params.postId },
-      { $pull: { comments: { _id: params.commentId } } }
-    );
+    post.comments.pull({ _id: context.params.commentId });
+    await post.save();
 
-    const updatedPost = await Post.findById(params.postId)
-      .populate({
-        path: 'author',
-        select: 'name image _id',
-        transform: (doc) => ({
-          id: doc._id.toString(),
-          name: doc.name,
-          image: doc.image
-        })
-      })
-      .populate({
-        path: 'comments.author',
-        select: 'name image _id',
-        transform: (doc) => ({
-          id: doc._id.toString(),
-          name: doc.name,
-          image: doc.image
-        })
-      });
-
-    return NextResponse.json(updatedPost);
+    return new NextResponse("Comment deleted successfully", { status: 200 });
   } catch (error) {
     console.error("Error deleting comment:", error);
     return new NextResponse("Internal Server Error", { status: 500 });

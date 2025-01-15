@@ -7,7 +7,7 @@ import { authOptions } from "@/lib/auth";
 export async function DELETE(
   req: Request,
   { params }: { params: { postId: string; commentId: string } }
-) {
+): Promise<NextResponse> {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {

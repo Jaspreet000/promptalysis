@@ -276,11 +276,18 @@ export default function CommunityPage() {
     try {
       const response = await fetch(`/api/challenges/${challengeId}`, {
         method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
 
-      if (response.ok) {
-        fetchChallenges();
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to delete challenge");
       }
+
+      // Refresh the challenges list
+      fetchChallenges();
     } catch (error) {
       console.error("Error deleting challenge:", error);
     }

@@ -4,17 +4,7 @@ import Post from "@/models/post";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-type RouteSegment = {
-  params: {
-    postId: string;
-  };
-  searchParams: { [key: string]: string | string[] | undefined };
-};
-
-export async function DELETE(
-  _req: Request,
-  context: RouteSegment
-): Promise<NextResponse> {
+export async function DELETE(request, context) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -23,14 +13,16 @@ export async function DELETE(
 
     await connectDB();
     const post = await Post.findById(context.params.postId);
-    
+
     if (!post) {
       return new NextResponse("Post not found", { status: 404 });
     }
 
     // Check if the user is the author of the post
     if (post.author.toString() !== session.user.id) {
-      return new NextResponse("Not authorized to delete this post", { status: 403 });
+      return new NextResponse("Not authorized to delete this post", {
+        status: 403,
+      });
     }
 
     await Post.findByIdAndDelete(context.params.postId);
@@ -39,4 +31,4 @@ export async function DELETE(
     console.error("Error deleting post:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
-} 
+}

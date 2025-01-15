@@ -4,17 +4,7 @@ import Template from "@/models/template";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-type RouteSegment = {
-  params: {
-    templateId: string;
-  };
-  searchParams: { [key: string]: string | string[] | undefined };
-};
-
-export async function DELETE(
-  _req: Request,
-  context: RouteSegment
-): Promise<NextResponse> {
+export async function POST(request, context) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -23,20 +13,31 @@ export async function DELETE(
 
     await connectDB();
     const template = await Template.findById(context.params.templateId);
-    
+
     if (!template) {
       return new NextResponse("Template not found", { status: 404 });
     }
 
-    // Check if the user is the author of the template
-    if (template.author.toString() !== session.user.id) {
-      return new NextResponse("Not authorized to delete this template", { status: 403 });
+    const hasLiked = template.likes.includes(session.user.id);
+
+    if (hasLiked) {
+      template.likes = template.likes.filter(
+        (id) => id.toString() !== session.user.id
+      );
+    } else {
+      template.likes.push(session.user.id);
     }
 
-    await Template.findByIdAndDelete(context.params.templateId);
-    return new NextResponse("Template deleted successfully", { status: 200 });
+    await template.save();
+
+    const updatedTemplate = await Template.findById(template._id).populate(
+      "author",
+      "name image"
+    );
+
+    return NextResponse.json(updatedTemplate);
   } catch (error) {
-    console.error("Error deleting template:", error);
+    console.error("Error toggling template like:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
-} 
+}

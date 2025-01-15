@@ -3,12 +3,11 @@ import { connectDB } from "@/lib/db";
 import Challenge from "@/models/challenge";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import type { NextRequest } from "next/server";
 
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { challengeId: string } }
-): Promise<NextResponse> {
+  req: Request,
+  { params, searchParams }: { params: { challengeId: string }; searchParams: Record<string, string | string[]> }
+): Promise<Response> {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {

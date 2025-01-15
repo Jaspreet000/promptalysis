@@ -4,10 +4,7 @@ import Challenge from "@/models/challenge";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: { challengeId: string } }
-) {
+export async function DELETE(request, context) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -15,10 +12,13 @@ export async function DELETE(
     }
 
     await connectDB();
-    const challenge = await Challenge.findById(params.challengeId);
+    const challenge = await Challenge.findById(context.params.challengeId);
 
     if (!challenge) {
-      return NextResponse.json({ message: "Challenge not found" }, { status: 404 });
+      return NextResponse.json(
+        { message: "Challenge not found" },
+        { status: 404 }
+      );
     }
 
     if (challenge.author.toString() !== session.user.id) {
@@ -28,10 +28,16 @@ export async function DELETE(
       );
     }
 
-    await Challenge.findByIdAndDelete(params.challengeId);
-    return NextResponse.json({ message: "Challenge deleted successfully" }, { status: 200 });
+    await Challenge.findByIdAndDelete(context.params.challengeId);
+    return NextResponse.json(
+      { message: "Challenge deleted successfully" },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error deleting challenge:", error);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { message: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

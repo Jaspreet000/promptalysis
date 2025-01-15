@@ -5,13 +5,15 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import type { NextRequest } from "next/server";
 
+interface Context {
+  params: { challengeId: string };
+}
+
 export async function DELETE(
   request: NextRequest,
-  context: { params: { challengeId: string } }
+  { params }: Context
 ): Promise<NextResponse> {
   try {
-    const { params } = context;
-
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });

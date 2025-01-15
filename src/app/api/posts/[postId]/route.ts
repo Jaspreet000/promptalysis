@@ -4,9 +4,15 @@ import Post from "@/models/post";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+type Props = {
+  params: {
+    postId: string;
+  };
+};
+
 export async function DELETE(
-  req: Request,
-  { params }: { params: { postId: string } }
+  request: Request,
+  props: Props
 ): Promise<NextResponse> {
   try {
     const session = await getServerSession(authOptions);
@@ -15,7 +21,7 @@ export async function DELETE(
     }
 
     await connectDB();
-    const post = await Post.findById(params.postId);
+    const post = await Post.findById(props.params.postId);
     
     if (!post) {
       return new NextResponse("Post not found", { status: 404 });
@@ -26,7 +32,7 @@ export async function DELETE(
       return new NextResponse("Not authorized to delete this post", { status: 403 });
     }
 
-    await Post.findByIdAndDelete(params.postId);
+    await Post.findByIdAndDelete(props.params.postId);
     return new NextResponse("Post deleted successfully", { status: 200 });
   } catch (error) {
     console.error("Error deleting post:", error);

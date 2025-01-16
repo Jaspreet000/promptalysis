@@ -13,7 +13,7 @@ import {
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -21,6 +21,10 @@ export async function POST(request: Request) {
 
     const { category } = await request.json();
     const userId = session.user.id;
+    if (!userId) {
+      return NextResponse.json({ error: "User ID not found" }, { status: 400 });
+    }
+
     let newAchievements = [];
 
     // Check achievements based on category

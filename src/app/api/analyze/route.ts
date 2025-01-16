@@ -40,7 +40,8 @@ export async function POST(request: Request) {
       throw new Error('Invalid scores received from analysis');
     }
 
-    const requiredScores = ['style', 'grammar', 'creativity', 'clarity', 'relevance'];
+    type ScoreKey = 'style' | 'grammar' | 'creativity' | 'clarity' | 'relevance';
+    const requiredScores: ScoreKey[] = ['style', 'grammar', 'creativity', 'clarity', 'relevance'];
     for (const score of requiredScores) {
       if (typeof result.scores[score] !== 'number') {
         result.scores[score] = 0;

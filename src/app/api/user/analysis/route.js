@@ -20,40 +20,44 @@ export async function GET() {
 
     await connectDB();
 
-    // Convert session user id to ObjectId
     const userId = new mongoose.Types.ObjectId(session.user.id);
     console.log("Looking for analyses with userId:", userId.toString());
 
-    // First check if any analyses exist
     const analysisCount = await Analysis.countDocuments({ author: userId });
     console.log("Total analyses found:", analysisCount);
 
-    // Get all analyses for the user with populated author
     const analyses = await Analysis.find({ author: userId })
       .sort({ createdAt: -1 })
       .limit(5)
       .populate({
-        path: 'author',
-        select: '_id name email',
-        transform: doc => ({
+        path: "author",
+        select: "_id name email",
+        transform: (doc) => ({
           _id: doc._id.toString(),
           name: doc.name,
-          email: doc.email
-        })
+          email: doc.email,
+        }),
       })
       .lean();
 
     if (!analyses || analyses.length === 0) {
-      console.log("No analyses found for user. Checking database connection and user ID...");
-      // Verify database connection
+      console.log(
+        "No analyses found for user. Checking database connection and user ID..."
+      );
       const isConnected = mongoose.connection.readyState === 1;
-      console.log("Database connection status:", isConnected ? "Connected" : "Not connected");
-      
-      // Check if user exists in the database
-      const userExists = await mongoose.connection.db.collection('users').findOne({ _id: userId });
+      console.log(
+        "Database connection status:",
+        isConnected ? "Connected" : "Not connected"
+      );
+
+      if (!mongoose.connection.db) {
+        throw new Error("Database connection not established");
+      }
+      const userExists = await mongoose.connection.db
+        .collection("users")
+        .findOne({ _id: userId });
       console.log("User exists in database:", !!userExists);
-      
-      // Return empty data instead of error
+
       return NextResponse.json({
         analyses: [],
         achievements: [],
@@ -72,25 +76,15 @@ export async function GET() {
       });
     }
 
-    console.log("Recent analyses:", analyses.map(a => ({
-      id: a._id.toString(),
-      mode: a.mode,
-      createdAt: a.createdAt,
-      hasScores: !!a.scores,
-      scoreKeys: a.scores ? Object.keys(a.scores) : [],
-    })));
-
-    // Get user achievements
     const achievements = await getUserAchievements(session.user.id);
     console.log("User achievements:", achievements.length);
 
-    // Calculate average scores across all analyses
     const allAnalyses = await Analysis.find({ author: userId }).lean();
     const totalAnalyses = allAnalyses.length;
 
     console.log("All analyses for stats:", {
       total: totalAnalyses,
-      modes: allAnalyses.map(a => a.mode),
+      modes: allAnalyses.map((a) => a.mode),
     });
 
     const averageScores = {
@@ -101,19 +95,15 @@ export async function GET() {
       relevance: 0,
     };
 
-    const modeStats: Record<string, { count: number; totalScore: number }> = {};
+    const modeStats = {};
 
     allAnalyses.forEach((analysis) => {
       if (!analysis.scores) return;
 
-      // Update average scores
-      averageScores.style += analysis.scores.style || 0;
-      averageScores.grammar += analysis.scores.grammar || 0;
-      averageScores.creativity += analysis.scores.creativity || 0;
-      averageScores.clarity += analysis.scores.clarity || 0;
-      averageScores.relevance += analysis.scores.relevance || 0;
+      Object.keys(averageScores).forEach((key) => {
+        averageScores[key] += analysis.scores[key] || 0;
+      });
 
-      // Update mode stats
       if (!modeStats[analysis.mode]) {
         modeStats[analysis.mode] = { count: 0, totalScore: 0 };
       }
@@ -123,16 +113,14 @@ export async function GET() {
       modeStats[analysis.mode].totalScore += avgScore;
     });
 
-    // Calculate final averages
     if (totalAnalyses > 0) {
       Object.keys(averageScores).forEach((key) => {
-        averageScores[key as keyof typeof averageScores] =
-          Math.round((averageScores[key as keyof typeof averageScores] / totalAnalyses) * 100) / 100;
+        averageScores[key] =
+          Math.round((averageScores[key] / totalAnalyses) * 100) / 100;
       });
     }
 
-    // Calculate mode averages
-    const finalModeStats: Record<string, { count: number; avgScore: number }> = {};
+    const finalModeStats = {};
     Object.entries(modeStats).forEach(([mode, stats]) => {
       finalModeStats[mode] = {
         count: stats.count,
@@ -140,15 +128,9 @@ export async function GET() {
       };
     });
 
-    console.log("Calculated stats:", {
-      averageScores,
-      modeStats: finalModeStats,
-    });
-
-    // Calculate trend data (last 6 months)
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
-    
+
     const trendData = await Analysis.aggregate([
       {
         $match: {
@@ -199,15 +181,14 @@ export async function GET() {
       { $sort: { date: 1 } },
     ]);
 
-    console.log("Trend data from DB:", trendData);
-
-    // Fill in missing months with zero values
-    const trend: Array<{ date: string; avgScore: number; count: number }> = [];
+    const trend = [];
     for (let i = 0; i < 6; i++) {
       const date = new Date(sixMonthsAgo);
       date.setMonth(date.getMonth() + i);
-      const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-      
+      const yearMonth = `${date.getFullYear()}-${String(
+        date.getMonth() + 1
+      ).padStart(2, "0")}`;
+
       const existingData = trendData.find((d) => d.date === yearMonth);
       if (existingData) {
         trend.push(existingData);
@@ -216,19 +197,19 @@ export async function GET() {
       }
     }
 
-    // Transform analyses for response
-    const transformedAnalyses = analyses.map(analysis => ({
+    const transformedAnalyses = analyses.map((analysis) => ({
       _id: analysis._id.toString(),
       prompt: analysis.prompt,
       mode: analysis.mode,
       scores: analysis.scores,
       createdAt: analysis.createdAt,
-      author: typeof analysis.author === 'object' 
-        ? analysis.author._id.toString() 
-        : analysis.author.toString(),
+      author:
+        typeof analysis.author === "object"
+          ? analysis.author._id.toString()
+          : analysis.author.toString(),
     }));
 
-    const response = {
+    return NextResponse.json({
       analyses: transformedAnalyses,
       achievements,
       stats: {
@@ -237,17 +218,7 @@ export async function GET() {
         modeStats: finalModeStats,
       },
       trend,
-    };
-
-    console.log("Final response data:", {
-      analysesCount: response.analyses.length,
-      achievementsCount: response.achievements.length,
-      totalAnalyses: response.stats.totalAnalyses,
-      modesFound: Object.keys(response.stats.modeStats),
-      trendMonths: response.trend.length,
     });
-
-    return NextResponse.json(response);
   } catch (error) {
     console.error("Dashboard data fetch error:", error);
     return NextResponse.json(
@@ -255,4 +226,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-} 
+}

@@ -28,6 +28,7 @@ function LoginContent() {
     setError("");
 
     try {
+      const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
       const result = await signIn("credentials", {
         email,
         password,
@@ -37,17 +38,13 @@ function LoginContent() {
       if (result?.error) {
         setError("Invalid credentials");
       } else {
-        router.push("/dashboard");
+        router.push(callbackUrl);
       }
     } catch (error) {
       setError("Something went wrong");
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleGuestMode = () => {
-    router.push("/analyze");
   };
 
   return (
@@ -152,7 +149,10 @@ function LoginContent() {
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => signIn("google")}
+                onClick={() => {
+                  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+                  signIn("google", { callbackUrl });
+                }}
                 className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 <span className="sr-only">Sign in with Google</span>
@@ -160,21 +160,16 @@ function LoginContent() {
               </button>
               <button
                 type="button"
-                onClick={() => signIn("github")}
+                onClick={() => {
+                  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+                  signIn("github", { callbackUrl });
+                }}
                 className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 <span className="sr-only">Sign in with GitHub</span>
                 GitHub
               </button>
             </div>
-
-            <button
-              type="button"
-              onClick={handleGuestMode}
-              className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-            >
-              Continue as Guest
-            </button>
           </div>
         </form>
       </div>

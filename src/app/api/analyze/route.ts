@@ -5,7 +5,7 @@ import { connectDB } from "@/lib/db";
 import Analysis from "@/models/analysis";
 import { analyzePrompt } from "@/lib/gemini";
 
-export const maxDuration = 300; // Set max duration to 5 minutes
+export const maxDuration = 60; // Set max duration to 60 seconds (Vercel hobby plan limit)
 export const dynamic = 'force-dynamic'; // Disable static optimization
 
 export async function POST(request: Request) {

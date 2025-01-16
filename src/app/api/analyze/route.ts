@@ -5,6 +5,9 @@ import { connectDB } from "@/lib/db";
 import Analysis from "@/models/analysis";
 import { analyzePrompt } from "@/lib/gemini";
 
+export const maxDuration = 300; // Set max duration to 5 minutes
+export const dynamic = 'force-dynamic'; // Disable static optimization
+
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -25,25 +28,39 @@ export async function POST(request: Request) {
     const result = await analyzePrompt(prompt, mode);
     console.log("Analysis result:", result);
 
-    if (session?.user?.id) {
-      await connectDB();
+    // Return immediately if no user session
+    if (!session?.user?.id) {
+      return NextResponse.json({
+        scores: result.scores,
+        response: result.response,
+        promptResult: result.promptResult,
+        suggestions: result.suggestions
+      });
+    }
 
+    // Save analysis in background
+    try {
+      await connectDB();
       const analysisData = {
         author: session.user.id,
         prompt,
         mode,
         scores: result.scores,
-        response: result.promptResult || result.response || "No response generated",
+        response: result.response || result.promptResult || "No response generated",
         suggestions: result.suggestions || [],
       };
 
-      console.log("Creating analysis with data:", analysisData);
-
       const analysis = await Analysis.create(analysisData);
-      return NextResponse.json(analysis);
+      
+      return NextResponse.json({
+        ...result,
+        _id: analysis._id,
+      });
+    } catch (dbError) {
+      console.error("Database error:", dbError);
+      // Still return the analysis result even if saving fails
+      return NextResponse.json(result);
     }
-
-    return NextResponse.json(result);
   } catch (error) {
     console.error("Analysis error:", error);
     return NextResponse.json(

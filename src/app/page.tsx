@@ -1,10 +1,23 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import Image from "next/image";
+import { useEffect, useState } from "react";
+import type { Container, Engine, ISourceOptions } from "@tsparticles/engine";
+import Particles, { initParticlesEngine } from "@tsparticles/react";
+import { loadSlim } from "@tsparticles/slim";
 
 export default function Home() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    initParticlesEngine(async (engine) => {
+      await loadSlim(engine);
+    }).then(() => {
+      setMounted(true);
+    });
+  }, []);
+
   const features = [
     {
       title: "AI-Powered Analysis",
@@ -44,13 +57,54 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-900 relative overflow-hidden">
+      {mounted && (
+        <Particles
+          id="tsparticles"
+          options={{
+            background: {
+              color: {
+                value: "transparent",
+              },
+            },
+            fpsLimit: 120,
+            particles: {
+              color: {
+                value: "#ffffff",
+              },
+              links: {
+                color: "#ffffff",
+                distance: 150,
+                enable: true,
+                opacity: 0.2,
+                width: 1,
+              },
+              move: {
+                enable: true,
+                speed: 1,
+              },
+              number: {
+                value: 40,
+              },
+              opacity: {
+                value: 0.2,
+              },
+              size: {
+                value: { min: 1, max: 3 },
+              },
+            },
+          }}
+          className="absolute inset-0 z-0"
+        />
+      )}
+
       {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        {/* Background Animation */}
+      <div className="relative">
+        {/* Animated Background Gradients */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-10 animate-gradient" />
-          <div className="absolute inset-0 bg-grid-pattern opacity-5" />
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-pink-500/20 animate-gradient-x" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-indigo-900/30 to-gray-900" />
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/30 via-gray-900/60 to-gray-900" />
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 sm:pt-20 pb-16 sm:pb-24">
@@ -58,32 +112,58 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="text-center"
+            className="text-center relative z-10"
           >
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6 leading-tight">
+            {/* Glowing orb behind title */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-500/20 rounded-full blur-3xl" />
+
+            <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-white mb-4 sm:mb-6 leading-tight relative">
               Master the Art of{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 block sm:inline">
-                Prompt Engineering
+              <span className="relative">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 animate-gradient-x">
+                  Prompt Engineering
+                </span>
+                <span className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 blur opacity-30 group-hover:opacity-100 transition duration-1000"></span>
               </span>
             </h1>
-            <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6 sm:mb-8 max-w-3xl mx-auto px-4 sm:px-0">
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="text-xl sm:text-2xl text-gray-300 mb-8 sm:mb-10 max-w-3xl mx-auto px-4 sm:px-0 relative z-10"
+            >
               Elevate your AI interactions with our advanced prompt analysis
               platform. Get instant feedback, learn from the community, and
               perfect your prompts.
-            </p>
+            </motion.p>
+
             <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4 px-4 sm:px-0">
-              <Link
-                href="/analyze"
-                className="px-8 py-3 rounded-full text-white bg-indigo-600 hover:bg-indigo-700 transition-colors font-medium text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 w-full sm:w-auto"
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                Try Now
-              </Link>
-              <Link
-                href="/community"
-                className="px-8 py-3 rounded-full text-indigo-600 bg-white hover:bg-gray-50 transition-colors font-medium text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 w-full sm:w-auto"
+                <Link
+                  href="/analyze"
+                  className="group relative px-8 py-4 rounded-full text-white bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 transition-all duration-300 font-medium text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 w-full sm:w-auto inline-block"
+                >
+                  <span className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full blur opacity-30 group-hover:opacity-100 transition duration-1000"></span>
+                  <span className="relative">Try Now</span>
+                </Link>
+              </motion.div>
+
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                Explore Community
-              </Link>
+                <Link
+                  href="/community"
+                  className="group relative px-8 py-4 rounded-full text-white bg-gray-800 hover:bg-gray-700 border border-gray-700 transition-all duration-300 font-medium text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 w-full sm:w-auto inline-block"
+                >
+                  <span className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full blur opacity-20 group-hover:opacity-30 transition duration-1000"></span>
+                  <span className="relative">Explore Community</span>
+                </Link>
+              </motion.div>
             </div>
           </motion.div>
 
@@ -92,19 +172,20 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="mt-12 sm:mt-20 relative px-4 sm:px-0"
+            className="mt-16 sm:mt-24 relative px-4 sm:px-0"
           >
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-64 h-64 sm:w-96 sm:h-96 bg-indigo-500 rounded-full filter blur-3xl opacity-10 animate-pulse" />
+              <div className="w-96 h-96 bg-indigo-500 rounded-full filter blur-[100px] opacity-20 animate-pulse" />
             </div>
             <div className="relative">
+              <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-xl blur opacity-30"></div>
               <video
                 src="/dashboard-preview.mp4"
                 autoPlay
                 muted
                 loop
                 playsInline
-                className="w-full rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700"
+                className="relative rounded-xl shadow-2xl border border-gray-700/50 w-full"
               />
             </div>
           </motion.div>
@@ -116,34 +197,34 @@ export default function Home() {
         variants={stagger}
         initial="initial"
         animate="animate"
-        className="py-16 sm:py-24 bg-white dark:bg-gray-800"
+        className="py-24 sm:py-32 relative z-10 bg-gray-900/50 backdrop-blur-xl"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div variants={fadeIn} className="text-center mb-12 sm:mb-16">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
+          <motion.div variants={fadeIn} className="text-center mb-16 sm:mb-20">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
               Why Choose Prompt Judge?
             </h2>
-            <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 px-4 sm:px-0">
+            <p className="text-xl text-gray-300 px-4 sm:px-0">
               Unlock the full potential of AI with our comprehensive platform
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-            {features.map((feature) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {features.map((feature, index) => (
               <motion.div
                 key={feature.title}
                 variants={fadeIn}
-                className="bg-gray-50 dark:bg-gray-700 p-6 sm:p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+                whileHover={{ scale: 1.05 }}
+                className="group relative"
               >
-                <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">
-                  {feature.icon}
+                <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-xl blur opacity-30 group-hover:opacity-75 transition duration-1000"></div>
+                <div className="relative bg-gray-800/50 backdrop-blur-xl p-8 rounded-xl border border-gray-700/50">
+                  <div className="text-4xl mb-4">{feature.icon}</div>
+                  <h3 className="text-xl font-semibold text-white mb-2">
+                    {feature.title}
+                  </h3>
+                  <p className="text-gray-300">{feature.description}</p>
                 </div>
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  {feature.title}
-                </h3>
-                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
-                  {feature.description}
-                </p>
               </motion.div>
             ))}
           </div>
@@ -151,12 +232,13 @@ export default function Home() {
       </motion.div>
 
       {/* Stats Section */}
-      <div className="bg-indigo-600 dark:bg-indigo-900">
+      <div className="relative z-10">
+        <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/20 via-purple-600/20 to-pink-600/20"></div>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="max-w-7xl mx-auto py-10 sm:py-12 px-4 sm:px-6 lg:px-8"
+          className="max-w-7xl mx-auto py-16 sm:py-20 px-4 sm:px-6 lg:px-8 relative"
         >
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
             {[
@@ -169,14 +251,13 @@ export default function Home() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 + index * 0.1 }}
-                className="text-center"
+                className="text-center group"
               >
-                <div className="text-3xl sm:text-4xl font-bold text-white mb-1 sm:mb-2">
-                  {stat.value}
+                <div className="text-4xl sm:text-5xl font-bold text-white mb-2 relative">
+                  <span className="relative z-10">{stat.value}</span>
+                  <span className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 blur opacity-30 group-hover:opacity-75 transition duration-1000"></span>
                 </div>
-                <div className="text-sm sm:text-base text-indigo-100">
-                  {stat.label}
-                </div>
+                <div className="text-lg text-gray-300">{stat.label}</div>
               </motion.div>
             ))}
           </div>
@@ -184,27 +265,36 @@ export default function Home() {
       </div>
 
       {/* CTA Section */}
-      <div className="bg-white dark:bg-gray-800">
+      <div className="relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="max-w-7xl mx-auto py-12 sm:py-16 px-4 sm:px-6 lg:px-8"
+          className="max-w-7xl mx-auto py-16 sm:py-24 px-4 sm:px-6 lg:px-8"
         >
-          <div className="text-center px-4 sm:px-0">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
-              Ready to Perfect Your Prompts?
-            </h2>
-            <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6 sm:mb-8">
-              Join thousands of users who are mastering prompt engineering with
-              our platform.
-            </p>
-            <Link
-              href="/signup"
-              className="inline-flex items-center px-6 sm:px-8 py-3 border border-transparent text-base sm:text-lg font-medium rounded-full text-white bg-indigo-600 hover:bg-indigo-700 transition-colors w-full sm:w-auto justify-center"
-            >
-              Get Started Free
-            </Link>
+          <div className="text-center relative">
+            <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-3xl blur opacity-20"></div>
+            <div className="relative bg-gray-800/50 backdrop-blur-xl p-8 sm:p-12 rounded-2xl border border-gray-700/50">
+              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+                Ready to Perfect Your Prompts?
+              </h2>
+              <p className="text-xl text-gray-300 mb-8">
+                Join thousands of users who are mastering prompt engineering
+                with our platform.
+              </p>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Link
+                  href="/signup"
+                  className="group relative inline-flex items-center px-8 py-4 rounded-full text-white bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 transition-all duration-300 font-medium text-lg"
+                >
+                  <span className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full blur opacity-30 group-hover:opacity-100 transition duration-1000"></span>
+                  <span className="relative">Get Started Free</span>
+                </Link>
+              </motion.div>
+            </div>
           </div>
         </motion.div>
       </div>

@@ -98,12 +98,13 @@ export default function Home() {
               <div className="w-64 h-64 sm:w-96 sm:h-96 bg-indigo-500 rounded-full filter blur-3xl opacity-10 animate-pulse" />
             </div>
             <div className="relative">
-              <Image
-                src="/dashboard-preview.png"
-                alt="Platform Preview"
-                width={1200}
-                height={600}
-                className="rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700"
+              <video
+                src="/dashboard-preview.mp4"
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="w-full rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700"
               />
             </div>
           </motion.div>
